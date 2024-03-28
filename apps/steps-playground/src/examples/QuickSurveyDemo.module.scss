@@ -1,0 +1,18 @@
+.survey {
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  min-height: 340px;
+
+  :global(.steps-outlet) {
+    flex: 0;
+  }
+
+  :global(.step) {
+    padding: 2rem;
+    max-width: 340px;
+    text-align: center;
+    border-radius: 0.75rem;
+    background: attr(data-background, "#bfbeda");
+  }
+}

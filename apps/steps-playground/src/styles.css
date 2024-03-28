@@ -1,0 +1,101 @@
+/**
+ * Styles are for demo purposes only.
+ *
+ * You can style the components however you want.
+ */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #1a1a1a;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    "Liberation Sans",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji";
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+label {
+  display: flex;
+  max-width: fit-content;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+header h1 {
+  font-weight: 500;
+  color: #dff976;
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+section > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+section > header h2 {
+  font-weight: 400;
+  color: #dff976;
+  margin-bottom: 0;
+}
+
+input:not([type="radio"], [type="checkbox"]),
+select {
+  display: block;
+  padding: 0.25rem 0.4375rem;
+  line-height: 1rem;
+}
+
+button + button {
+  margin-left: 0.5rem;
+}
+
+.steps {
+  background: #eee;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+footer {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
