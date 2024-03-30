@@ -96,4 +96,22 @@ describe("useStepsState hook", () => {
     expect(result.current.state.currentStep.id).toBe("step1");
     expect(result.current.state.history).toEqual(["step1"]);
   });
+
+  it("does not navigate when disabled", async () => {
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        defaultStep: "step1",
+        animate: false,
+        disabled: true,
+        form: formMock,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.next();
+    });
+
+    expect(result.current.state.history).toEqual(["step1"]);
+  });
 });
