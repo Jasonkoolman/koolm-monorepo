@@ -1,7 +1,9 @@
 import { render } from "@testing-library/react";
 import { m } from "framer-motion";
-import { StepView } from "./../StepView";
+import { StepsContextValue } from "../../types";
+import { MockContextValue } from "../../test-utils";
 import { useStepsContext } from "../../steps/useStepsContext";
+import { StepView } from "./../StepView";
 
 vi.mock("framer-motion", () => ({
   m: {
@@ -13,9 +15,15 @@ vi.mock("../../steps/useStepsContext", () => ({
   useStepsContext: vi.fn(),
 }));
 
+const mockContext = (value: MockContextValue) => {
+  vi.mocked(useStepsContext).mockReturnValue(
+    value as unknown as StepsContextValue,
+  );
+};
+
 describe("StepView component", () => {
   it("renders correctly", () => {
-    vi.mocked(useStepsContext).mockReturnValue({
+    mockContext({
       state: { direction: "forward" },
       animate: { variants: {} },
     });
@@ -33,7 +41,7 @@ describe("StepView component", () => {
       exit: { opacity: 1 },
     };
 
-    vi.mocked(useStepsContext).mockReturnValue({
+    mockContext({
       state: { direction: customPropValue },
       animate: { variants },
       form: { setStepField: mockSetStepField },
@@ -52,7 +60,7 @@ describe("StepView component", () => {
         exit: "exit",
         transition: expect.any(Object),
       }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
