@@ -375,8 +375,3 @@ Before contributing, please read our contributing guidelines to understand the p
 ## License
 
 Steps is [MIT licensed](https://opensource.org/licenses/MIT). Feel free to use, modify, and distribute it as part of your projects.
-
-## Roadmap
-
-- One form vs. multiple forms: https://github.com/orgs/react-hook-form/discussions/3714#discussioncomment-286340
-- Read https://github.com/react-hook-form/react-hook-form/issues/4355
