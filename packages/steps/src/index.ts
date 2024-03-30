@@ -1,5 +1,3 @@
-import "./styles.scss";
-
 export * from "./types";
 
 export * from "./button/NextButton";
