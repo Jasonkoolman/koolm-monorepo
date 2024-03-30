@@ -60,9 +60,6 @@ const stepsReducer = (state: any, action: any) => {
 
 /**
  * Manages the state and navigation between steps in a multi-step form.
- *
- * This hook integrates with `useStepsHistory` for navigation history management,
- * enabling movement between steps.
  */
 export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
   stepElements,
@@ -81,7 +78,7 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
 
   const { isAnimated, transition } = useMemo(
     () => getAnimationConfig(animate),
-    [animate]
+    [animate],
   );
 
   /**
@@ -110,7 +107,7 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
       direction: inner.direction,
       history: inner.history,
     }),
-    [inner, currentStep, stepElements, isAnimated, disabled]
+    [inner, currentStep, stepElements, isAnimated, disabled],
   );
 
   /**
@@ -131,7 +128,7 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
         return false;
       }
     },
-    []
+    [],
   );
 
   /**
@@ -147,12 +144,20 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
     (
       stepId: StepId,
       newDirection: StepsDirection = "forward",
-      newActiveSteps?: any
+      newActiveSteps?: any,
     ) => {
-      const newHistory =
-        newDirection === "forward"
-          ? [...state.history, stepId] // TODO: need to check existence (port useStepsHistory and remove that hook)
-          : state.history.slice(0, state.history.indexOf(stepId) + 1); // TODO: need to check existence
+      let newHistory = state.history;
+
+      if (newDirection === "backward") {
+        // Set history up to and including the specified step if it exists
+        const index = state.history.indexOf(stepId);
+        if (index !== -1) {
+          newHistory = state.history.slice(0, index + 1);
+        }
+      } else if (!state.history.includes(stepId)) {
+        // Add new step to history if it's not already present
+        newHistory = [...state.history, stepId];
+      }
 
       dispatch({
         type: "NAVIGATE",
@@ -165,11 +170,11 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
       if (isAnimated) {
         setTimeout(
           () => dispatch({ type: "SET_STATUS", status: "idle" }),
-          transition.duration * 1000
+          transition.duration * 1000,
         );
       }
     },
-    [state, isAnimated, transition]
+    [state, isAnimated, transition],
   );
 
   /**
@@ -200,14 +205,14 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
       const nextStepId = findNextActiveStep(
         activeSteps,
         currentStep.id,
-        stepId
+        stepId,
       );
 
       if (nextStepId) {
         goto(nextStepId, "forward", activeSteps);
       }
     },
-    [state, form, runChecks, onForward, goto]
+    [state, form, runChecks, onForward, goto],
   );
 
   /**
@@ -242,7 +247,7 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
         goto(targetStepId, "backward");
       }
     },
-    [state, form, goto]
+    [state, form, goto],
   );
 
   /**

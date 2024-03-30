@@ -1,0 +1,33 @@
+root = true
+
+# Set the default charset
+[*]
+charset = utf-8
+
+# Indentation settings
+[*.js]
+[*.ts]
+[*.tsx]
+indent_style = space
+indent_size = 2
+
+[*.html]
+indent_style = space
+indent_size = 2
+
+[*.css]
+[*.scss]
+indent_style = space
+indent_size = 2
+
+# End of line settings
+[*]
+end_of_line = lf
+
+# Trim trailing whitespace
+[*]
+trim_trailing_whitespace = true
+
+# Ensure a newline at the end of the file
+[*]
+insert_final_newline = true

@@ -24,14 +24,16 @@ const valueStyle: CSSProperties = {
 
 export const DebuggerInfo = ({ context }: { context: StepsContextValue }) => {
   const {
-    currentStep,
-    allSteps,
-    activeSteps,
-    history,
-    direction,
-    isValidating,
-    isTransitioning,
-    isDisabled,
+    state: {
+      currentStep,
+      allSteps,
+      activeSteps,
+      history,
+      direction,
+      isValidating,
+      isTransitioning,
+      isDisabled,
+    },
   } = context;
 
   const progression = (

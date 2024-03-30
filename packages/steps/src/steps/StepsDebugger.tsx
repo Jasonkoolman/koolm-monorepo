@@ -23,17 +23,6 @@ const titleStyle: CSSProperties = {
   color: "#CCC",
 };
 
-const toggleButtonStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  border: "1px solid transparent",
-  height: "1.75rem",
-  width: "1.75rem",
-  color: "#fff",
-  background: "transparent",
-};
-
 type StepsDebuggerProps = HTMLAttributes<HTMLDivElement> & {
   title?: string;
 };

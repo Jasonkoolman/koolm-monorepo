@@ -1,4 +1,4 @@
-// import "./styles.scss";
+import "./styles.scss";
 
 export * from "./types";
 
@@ -14,5 +14,5 @@ export * from "./step/StepNavbar";
 export * from "./step/StepView";
 
 export * from "./steps/Steps";
-// export * from "./steps/StepsDebugger"; (importing react-dom causes a huge dist size increase)
+export * from "./steps/StepsDebugger";
 export * from "./steps/useStepsContext";

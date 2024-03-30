@@ -36,7 +36,10 @@ const inactiveStepStyle: CSSProperties = {
 };
 
 export const DebuggerFlow = ({ context }: { context: StepsContextValue }) => {
-  const { allSteps, history, activeSteps, getFields } = context;
+  const {
+    state: { allSteps, history, activeSteps },
+    form: { getStepFields },
+  } = context;
 
   return (
     <div style={stepsContainerStyle}>
@@ -50,14 +53,14 @@ export const DebuggerFlow = ({ context }: { context: StepsContextValue }) => {
         const stepStyle = isHistory
           ? historyStepStyle
           : isActive
-          ? activeStepStyle
-          : inactiveStepStyle;
+            ? activeStepStyle
+            : inactiveStepStyle;
 
         return (
           <div
             key={stepId}
             style={stepStyle}
-            title={`Fields registered: ${getFields(stepId)}`}
+            title={`Fields registered: ${getStepFields(stepId)}`}
           >
             {[index + 1]}: {stepId}
           </div>
