@@ -1,16 +1,21 @@
 import { Reducer, useCallback, useReducer } from "react";
-import { StepsValues, StepId, StepElement, StepsDirection } from "../types";
+import {
+  StepsValues,
+  StepElement,
+  StepsDirection,
+  StepsHistory,
+} from "../types";
 
 type StepsReducerState<TStepsValues extends StepsValues> = {
   direction: StepsDirection;
   status: "idle" | "transitioning" | "validating";
-  history: StepId[];
+  history: StepsHistory;
   activeSteps: StepElement<TStepsValues>[];
 };
 
 type StepsReducerAction<TStepsValues extends StepsValues> =
   | { type: "UPDATE_STATE"; payload: Partial<StepsReducerState<TStepsValues>> }
-  | { type: "RESET"; initialStepId: StepId };
+  | { type: "RESET"; history: StepsHistory };
 
 const initialState: StepsReducerState<any> = {
   direction: "forward",
@@ -29,7 +34,7 @@ function stepsReducer<TStepsValues extends StepsValues>(
     case "RESET":
       return {
         ...initialState,
-        history: [action.initialStepId],
+        history: action.history,
         direction: "backward",
       };
     default:
@@ -54,7 +59,7 @@ function useStepsStateReducer<TStepsValues extends StepsValues>(
   );
 
   const resetState = useCallback(
-    (initialStepId: StepId) => dispatch({ type: "RESET", initialStepId }),
+    (history: StepsHistory) => dispatch({ type: "RESET", history }),
     [],
   );
 

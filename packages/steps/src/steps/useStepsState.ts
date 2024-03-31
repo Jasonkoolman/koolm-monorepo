@@ -9,6 +9,7 @@ import {
   StepsFormHandle,
   StepId,
   StepElement,
+  StepsHistory,
 } from "../types";
 import {
   filterActiveSteps,
@@ -21,7 +22,7 @@ import useStepsStateReducer from "./useStepsStateReducer";
 
 type UseStepsStateProps<TStepsValues extends StepsValues> = {
   stepElements: StepElement<TStepsValues>[];
-  defaultStep?: StepId;
+  defaultHistory?: StepsHistory;
   animate: StepsAnimateConfig;
   disabled: boolean;
   form: StepsFormHandle<TStepsValues>;
@@ -34,7 +35,7 @@ type UseStepsStateProps<TStepsValues extends StepsValues> = {
  */
 export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
   stepElements,
-  defaultStep,
+  defaultHistory,
   animate,
   disabled,
   form,
@@ -43,7 +44,10 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
 }: UseStepsStateProps<TStepsValues>) => {
   const { state, updateState, resetState } = useStepsStateReducer({
     activeSteps: filterActiveSteps(stepElements, form.getValues()),
-    history: [defaultStep || stepElements[0].props.id],
+    history:
+      defaultHistory && defaultHistory.length > 0
+        ? defaultHistory
+        : [stepElements[0].props.id],
   });
 
   const { isAnimated, transition } = useMemo(
@@ -222,10 +226,14 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
    * Resets the state of steps and its form.
    */
   const reset = useCallback(async () => {
-    resetState(defaultStep || stepElements[0].props.id);
+    const initialHistory =
+      defaultHistory && defaultHistory.length > 0
+        ? defaultHistory
+        : [stepElements[0].props.id];
+    resetState(initialHistory);
     // Default values must be provided (see https://github.com/orgs/react-hook-form/discussions/7589)
     form.reset(form.defaultValues);
-  }, [form, resetState]);
+  }, [form, defaultHistory, resetState]);
 
   /**
    * Effect to handle the transition state.

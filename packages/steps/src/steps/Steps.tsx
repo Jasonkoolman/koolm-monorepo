@@ -20,7 +20,7 @@ import {
  *
  * @param props.children - The step components that form the multi-step process.
  * @param props.defaultValues - Default form values.
- * @param props.defaultStep - The ID of the initial step to display.
+ * @param props.defaultHistory - The history of the steps flow.
  * @param props.animate - Configures the animation for step transitions.
  * @param props.disabled - Disables all interactions when true.
  * @param props.className - Additional CSS classes for the form.
@@ -33,7 +33,7 @@ import {
 function Steps<TStepsValues extends StepsValues = StepsValues>({
   children,
   defaultValues,
-  defaultStep,
+  defaultHistory,
   animate = "root",
   disabled = false,
   className,
@@ -51,12 +51,12 @@ function Steps<TStepsValues extends StepsValues = StepsValues>({
 
   const { stepElements, layoutElements } = useMemo(
     () => getStepsElements<TStepsValues>(children),
-    [children]
+    [children],
   );
 
   const { next, prev, reset, state } = useStepsState<TStepsValues>({
     stepElements,
-    defaultStep,
+    defaultHistory,
     disabled,
     animate,
     form,
@@ -72,7 +72,7 @@ function Steps<TStepsValues extends StepsValues = StepsValues>({
   const getAnswers = useCallback(
     () =>
       getRelevantValues(form.getValues(), history, form.stepsFieldsRef.current),
-    [form, history]
+    [form, history],
   );
 
   /**
@@ -83,7 +83,7 @@ function Steps<TStepsValues extends StepsValues = StepsValues>({
       const answers = getAnswers();
       onSubmit?.({ answers, values, state });
     },
-    [onSubmit, getAnswers, state]
+    [onSubmit, getAnswers, state],
   );
 
   /**
@@ -109,7 +109,7 @@ function Steps<TStepsValues extends StepsValues = StepsValues>({
       getAnswers,
       reset,
     }),
-    [next, prev, form, state, animate, getAnswers]
+    [next, prev, form, state, animate, getAnswers],
   );
 
   return (

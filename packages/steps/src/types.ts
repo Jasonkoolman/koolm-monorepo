@@ -110,14 +110,14 @@ export type StepsNavigationHandler<TStepsValues extends StepsValues> =
  */
 export type StepsTransitionHandler<TStepsValues extends StepsValues> = (
   currentStep: CurrentStep,
-  values: TStepsValues
+  values: TStepsValues,
 ) => void;
 
 /**
  * Handler for submission of the steps form.
  */
 export type StepsSubmitHandler<TStepsValues extends StepsValues> = (
-  result: StepsSubmitResult<TStepsValues>
+  result: StepsSubmitResult<TStepsValues>,
 ) => void | Promise<void>;
 
 /**
@@ -177,7 +177,7 @@ export type StepsProps<TStepsValues extends StepsValues> = Pick<
 > & {
   children: StepElement<TStepsValues>[] | StepElement<TStepsValues>;
   defaultValues?: Hook.DefaultValues<TStepsValues>;
-  defaultStep?: StepId;
+  defaultHistory?: StepsHistory;
   animate?: StepsAnimateConfig;
   disabled?: boolean;
   className?: string;
