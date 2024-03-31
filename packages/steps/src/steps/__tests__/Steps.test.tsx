@@ -35,13 +35,10 @@ const Input = ({ name, ...props }: InputProps) => {
 
 const renderSteps = (props?: MockStepsProps) => {
   const onSubmit = vi.fn();
+  const stepsProps = props as unknown as StepsProps<any>;
 
   const result = render(
-    <Steps
-      animate={false}
-      onSubmit={onSubmit}
-      {...(props as unknown as StepsProps<any>)}
-    >
+    <Steps animate={false} onSubmit={onSubmit} {...stepsProps}>
       <Step id="1">
         <h2>One</h2>
         <StepField as={Input} name="one" />
@@ -50,9 +47,13 @@ const renderSteps = (props?: MockStepsProps) => {
         <h2>Two</h2>
         <StepField as={Input} name="two" required />
       </Step>
-      <Step id="2a" active={(values) => values.two === "secret"}>
+      <Step id="2a" active={(values) => values.two === "a"}>
         <h2>Two A</h2>
         <StepField as={Input} name="two_a" required />
+      </Step>
+      <Step id="2b" active={(values) => values.two === "b"}>
+        <h2>Two B</h2>
+        <StepField as={Input} name="two_b" required />
       </Step>
       <Step id="3">
         <h2>Three</h2>
@@ -149,6 +150,61 @@ describe("Steps Component", () => {
         state: expect.any(Object),
         values: expect.objectContaining(answers),
         answers: expect.objectContaining(answers),
+      }),
+    );
+  });
+
+  it("handles conditional steps and retains only visited step values", async () => {
+    const { getInput, getButton, getStep, onSubmit } = renderSteps();
+
+    // Navigate to Step 2
+    await user.type(getInput("one"), "FirstValue");
+    await user.click(getButton("Next"));
+    expect(getStep("Two")).toBeInTheDocument();
+
+    // Choose the option that leads to Step 2a
+    await user.type(getInput("two"), "a");
+    await user.click(getButton("Next"));
+    expect(getStep("Two A")).toBeInTheDocument();
+
+    // Fill in Step 2a and then navigate back to Step 2 to change the input to lead to 2b
+    await user.type(getInput("two_a"), "ValueA");
+    await user.click(getButton("Prev"));
+    expect(getStep("Two")).toBeInTheDocument();
+
+    // Change input at Step 2 to lead to Step 2b instead
+    await user.clear(getInput("two"));
+    await user.type(getInput("two"), "b");
+    await user.click(getButton("Next"));
+    expect(getStep("Two B")).toBeInTheDocument();
+
+    // Fill in Step 2b and proceed to Step 3
+    await user.type(getInput("two_b"), "ValueB");
+    await user.click(getButton("Next"));
+    expect(getStep("Three")).toBeInTheDocument();
+
+    // Fill in Step 3 and submit
+    await user.type(getInput("three"), "ThirdValue");
+    await user.click(getButton("Submit"));
+
+    // Verify onSubmit was called with the expected data
+    // Specifically, "two_a" should NOT be included in `answers` since we navigated back and chose a different path
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: expect.any(Object),
+        values: expect.objectContaining({
+          one: "FirstValue",
+          two: "b",
+          two_a: "ValueA",
+          two_b: "ValueB",
+          three: "ThirdValue",
+        }),
+        answers: expect.objectContaining({
+          one: "FirstValue",
+          two: "b",
+          two_b: "ValueB",
+          three: "ThirdValue",
+        }),
       }),
     );
   });
