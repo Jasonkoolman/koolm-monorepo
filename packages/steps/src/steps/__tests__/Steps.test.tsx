@@ -3,6 +3,7 @@ import { render } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { MotionGlobalConfig } from "framer-motion";
 import { useFormContext } from "react-hook-form";
+import { MockStepsProps } from "../../test-utils";
 import {
   Steps,
   Step,
@@ -11,37 +12,72 @@ import {
   PrevButton,
   NextButton,
   SubmitButton,
+  StepsProps,
 } from "../..";
 
-export type InputProps = React.HTMLProps<HTMLInputElement> & {
+type InputProps = React.HTMLProps<HTMLInputElement> & {
   name: string;
-  label: string;
 };
 
-export const Input = ({ name, label, ...props }: InputProps) => {
-  const id = React.useId();
+const Input = ({ name, ...props }: InputProps) => {
   const { register } = useFormContext();
-  const { required, min, max, ...rest } = props;
-
+  const { required, ...rest } = props;
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        type="text"
-        {...rest}
-        {...register(name, { required, min, max })}
-      />
-    </div>
+    <input
+      type="text"
+      placeholder={name}
+      defaultValue=""
+      {...rest}
+      {...register(name, { required })}
+    />
   );
 };
 
-const defaultValues = {
-  guestOfHonor: "",
-  theme: "",
-};
+const renderSteps = (props?: MockStepsProps) => {
+  const onSubmit = vi.fn();
 
-const handleSubmit = vi.fn();
+  const result = render(
+    <Steps
+      animate={false}
+      onSubmit={onSubmit}
+      {...(props as unknown as StepsProps<any>)}
+    >
+      <Step id="1">
+        <h2>One</h2>
+        <StepField as={Input} name="one" />
+      </Step>
+      <Step id="2">
+        <h2>Two</h2>
+        <StepField as={Input} name="two" required />
+      </Step>
+      <Step id="2a" active={(values) => values.two === "secret"}>
+        <h2>Two A</h2>
+        <StepField as={Input} name="two_a" required />
+      </Step>
+      <Step id="3">
+        <h2>Three</h2>
+        <StepField as={Input} name="three" />
+      </Step>
+      <StepNavbar>
+        <PrevButton>Prev</PrevButton>
+        <NextButton>Next</NextButton>
+        <SubmitButton>Submit</SubmitButton>
+      </StepNavbar>
+    </Steps>,
+  );
+
+  const getStep = (name: string) => result.getByRole("heading", { name });
+  const getInput = (name: string) => result.getByPlaceholderText(name);
+  const getButton = (name: string) => result.getByRole("button", { name });
+
+  return {
+    ...result,
+    getStep,
+    getInput,
+    getButton,
+    onSubmit,
+  };
+};
 
 describe("Steps Component", () => {
   const user = userEvent.setup();
@@ -55,204 +91,60 @@ describe("Steps Component", () => {
   });
 
   it("renders and navigates between steps correctly", async () => {
-    const { getByText, getByRole } = render(
-      <Steps
-        defaultValues={defaultValues}
-        onSubmit={handleSubmit}
-        animate={false}
-      >
-        <Step id="guestOfHonor">
-          <h2>👤 Who's the party for?</h2>
-          <StepField
-            as={Input}
-            name="guestOfHonor"
-            label="Guest of Honor's Name"
-          />
-        </Step>
-        <Step id="theme">
-          <h2>🎨 Choose a theme</h2>
-          <StepField
-            as={Input}
-            name="theme"
-            label="Party Theme (e.g., '80s, Superheroes, Jungle)"
-          />
-        </Step>
-        <Step id="confirmation">
-          <h2>🎉 Ready to plan your surprise party?</h2>
-          <p>
-            Make sure all the details are correct. You can go back to edit any
-            step.
-          </p>
-        </Step>
-        <StepNavbar>
-          <PrevButton>Prev</PrevButton>
-          <NextButton>Next</NextButton>
-        </StepNavbar>
-      </Steps>,
-    );
+    const { getStep, getButton } = renderSteps();
 
-    expect(getByText("👤 Who's the party for?")).toBeInTheDocument();
+    expect(getStep("One")).toBeInTheDocument();
 
-    await user.click(getByRole("button", { name: "Next" }));
+    await user.click(getButton("Next"));
 
-    expect(getByText("🎨 Choose a theme")).toBeInTheDocument();
+    expect(getStep("Two")).toBeInTheDocument();
   });
 
   it("prevents navigation to the next step on invalid input", async () => {
-    const { getByText, getByLabelText } = render(
-      <Steps
-        defaultValues={defaultValues}
-        onSubmit={handleSubmit}
-        animate={false}
-      >
-        <Step id="guestOfHonor">
-          <h2>👤 Who's the party for?</h2>
-          <StepField
-            as={Input}
-            name="guestOfHonor"
-            label="Guest of Honor's Name"
-            required
-          />
-        </Step>
-        <Step id="theme">
-          <h2>🎨 Choose a theme</h2>
-          <StepField
-            as={Input}
-            name="theme"
-            label="Party Theme (e.g., '80s, Superheroes, Jungle)"
-          />
-        </Step>
-        <Step id="confirmation">
-          <h2>🎉 Ready to plan your surprise party?</h2>
-          <p>
-            Make sure all the details are correct. You can go back to edit any
-            step.
-          </p>
-        </Step>
-        <StepNavbar>
-          <PrevButton hide="guestOfHonor">Oops, go back!</PrevButton>
-          <NextButton hide="confirmation">What's next?</NextButton>
-          <SubmitButton show="confirmation">Plan the party!</SubmitButton>
-        </StepNavbar>
-      </Steps>,
-    );
+    const { getStep, getInput, getButton } = renderSteps();
 
-    await user.click(getByText("What's next?"));
+    await user.click(getButton("Next"));
 
-    expect(getByText("👤 Who's the party for?")).toBeInTheDocument();
+    expect(getStep("Two")).toBeInTheDocument();
 
-    await user.type(getByLabelText("Guest of Honor's Name"), "John Doe");
+    await user.click(getButton("Next"));
 
-    await user.click(getByText("What's next?"));
+    expect(getStep("Two")).toBeInTheDocument();
 
-    expect(getByText("🎨 Choose a theme")).toBeInTheDocument();
+    await user.type(getInput("two"), "John Doe");
+    await user.click(getButton("Next"));
+
+    expect(getStep("Three")).toBeInTheDocument();
   });
 
   it("navigates back to the previous step", async () => {
-    const { getByText, getByLabelText } = render(
-      <Steps
-        defaultValues={defaultValues}
-        onSubmit={handleSubmit}
-        animate={false}
-      >
-        <Step id="guestOfHonor">
-          <h2>👤 Who's the party for?</h2>
-          <StepField
-            as={Input}
-            name="guestOfHonor"
-            label="Guest of Honor's Name"
-          />
-        </Step>
-        <Step id="theme">
-          <h2>🎨 Choose a theme</h2>
-          <StepField
-            as={Input}
-            name="theme"
-            label="Party Theme (e.g., '80s, Superheroes, Jungle)"
-          />
-        </Step>
-        <Step id="confirmation">
-          <h2>🎉 Ready to plan your surprise party?</h2>
-          <p>
-            Make sure all the details are correct. You can go back to edit any
-            step.
-          </p>
-        </Step>
-        <StepNavbar>
-          <PrevButton hide="guestOfHonor">Oops, go back!</PrevButton>
-          <NextButton hide="confirmation">What's next?</NextButton>
-          <SubmitButton show="confirmation">Plan the party!</SubmitButton>
-        </StepNavbar>
-      </Steps>,
-    );
+    const { getStep, getButton } = renderSteps();
 
-    await user.type(getByLabelText("Guest of Honor's Name"), "John Doe");
-    await user.click(getByText("What's next?"));
+    await user.click(getButton("Next"));
+    await user.click(getButton("Prev"));
 
-    expect(getByText("🎨 Choose a theme")).toBeInTheDocument();
-    await user.click(getByText("Oops, go back!"));
-
-    expect(getByText("👤 Who's the party for?")).toBeInTheDocument();
+    expect(getStep("One")).toBeInTheDocument();
   });
 
   it("submits the form with valid inputs from all steps", async () => {
-    const { getByText, getByLabelText } = render(
-      <Steps
-        defaultValues={defaultValues}
-        onSubmit={handleSubmit}
-        animate={false}
-      >
-        <Step id="guestOfHonor">
-          <h2>👤 Who's the party for?</h2>
-          <StepField
-            as={Input}
-            name="guestOfHonor"
-            label="Guest of Honor's Name"
-          />
-        </Step>
-        <Step id="theme">
-          <h2>🎨 Choose a theme</h2>
-          <StepField
-            as={Input}
-            name="theme"
-            label="Party Theme (e.g., '80s, Superheroes, Jungle)"
-          />
-        </Step>
-        <Step id="confirmation">
-          <h2>🎉 Ready to plan your surprise party?</h2>
-          <p>
-            Make sure all the details are correct. You can go back to edit any
-            step.
-          </p>
-        </Step>
-        <StepNavbar>
-          <PrevButton hide="guestOfHonor">Oops, go back!</PrevButton>
-          <NextButton hide="confirmation">What's next?</NextButton>
-          <SubmitButton show="confirmation">Plan the party!</SubmitButton>
-        </StepNavbar>
-      </Steps>,
-    );
+    const { getInput, getButton, onSubmit } = renderSteps();
 
     const answers = {
-      guestOfHonor: "John Doe",
-      theme: "80s",
+      one: "FirstValue",
+      two: "SecondValue",
+      three: "ThirdValue",
     };
 
-    await user.type(
-      getByLabelText("Guest of Honor's Name"),
-      answers.guestOfHonor,
-    );
-    await user.click(getByText("What's next?"));
+    await user.type(getInput("one"), answers.one);
+    await user.click(getButton("Next"));
 
-    await user.type(
-      getByLabelText("Party Theme (e.g., '80s, Superheroes, Jungle)"),
-      answers.theme,
-    );
-    await user.click(getByText("What's next?"));
+    await user.type(getInput("two"), answers.two);
+    await user.click(getButton("Next"));
 
-    await user.click(getByText("Plan the party!"));
+    await user.type(getInput("three"), answers.three);
+    await user.click(getButton("Submit"));
 
-    expect(handleSubmit).toHaveBeenCalledWith(
+    expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         state: expect.any(Object),
         values: expect.objectContaining(answers),
