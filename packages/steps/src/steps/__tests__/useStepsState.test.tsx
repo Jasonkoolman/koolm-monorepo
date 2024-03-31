@@ -27,16 +27,20 @@ const formMock = {
 
 describe("useStepsState hook", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     formMock.validate.mockClear();
     formMock.getValues.mockClear();
     formMock.reset.mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("processes step elements correctly", () => {
     const { result } = renderHook(() =>
       useStepsState({
         stepElements,
-        defaultStep: "step1",
         animate: false,
         disabled: false,
         form: formMock,
@@ -59,7 +63,6 @@ describe("useStepsState hook", () => {
     const { result } = renderHook(() =>
       useStepsState({
         stepElements,
-        defaultStep: "step1",
         animate: false,
         disabled: false,
         form: formMock,
@@ -78,7 +81,6 @@ describe("useStepsState hook", () => {
     const { result } = renderHook(() =>
       useStepsState({
         stepElements,
-        defaultStep: "step1",
         animate: false,
         disabled: false,
         form: formMock,
@@ -101,7 +103,7 @@ describe("useStepsState hook", () => {
     const { result } = renderHook(() =>
       useStepsState({
         stepElements,
-        defaultStep: "step1",
+        defaultHistory: ["step1", "step2"],
         animate: false,
         disabled: true,
         form: formMock,
@@ -112,6 +114,121 @@ describe("useStepsState hook", () => {
       await result.current.next();
     });
 
+    expect(result.current.state.currentStep.id).toBe("step2");
+
+    await act(async () => {
+      await result.current.next();
+    });
+
+    expect(result.current.state.currentStep.id).toBe("step2");
+  });
+
+  it("does not navigate to the next step if form validation fails", async () => {
+    formMock.validate.mockResolvedValueOnce(false);
+
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        animate: false,
+        disabled: false,
+        form: formMock,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.next();
+    });
+
+    expect(result.current.state.currentStep.id).toBe("step1");
+  });
+
+  it("calls onForward and can prevent navigation", async () => {
+    const onForwardMock = vi.fn().mockResolvedValue(false);
+
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        animate: false,
+        disabled: false,
+        form: formMock,
+        onForward: onForwardMock,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.next();
+    });
+
+    expect(onForwardMock).toHaveBeenCalled();
+    expect(result.current.state.currentStep.id).toBe("step1");
+  });
+
+  it("calls onBackward and can prevent navigation", async () => {
+    const onBackwardMock = vi.fn().mockResolvedValue(false);
+
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        defaultHistory: ["step1", "step2"],
+        animate: false,
+        disabled: false,
+        form: formMock,
+        onBackward: onBackwardMock,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.prev();
+    });
+
+    expect(onBackwardMock).toHaveBeenCalled();
+    expect(result.current.state.currentStep.id).not.toBe("step1");
+  });
+
+  it("handles transition state with animation enabled", async () => {
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        animate: "root",
+        disabled: false,
+        form: formMock,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.next();
+    });
+
+    expect(result.current.state.isTransitioning).toBe(true);
+    expect(result.current.state.isDisabled).toBe(true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(result.current.state.isTransitioning).toBe(false);
+    expect(result.current.state.isDisabled).toBe(false);
+  });
+
+  it("resets the state correctly", async () => {
+    const { result } = renderHook(() =>
+      useStepsState({
+        stepElements,
+        animate: false,
+        disabled: false,
+        form: formMock,
+      }),
+    );
+
+    await act(async () => {
+      result.current.next();
+    });
+
+    await act(async () => {
+      result.current.reset();
+    });
+
     expect(result.current.state.history).toEqual(["step1"]);
+    expect(formMock.reset).toHaveBeenCalled();
   });
 });
