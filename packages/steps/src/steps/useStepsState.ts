@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 import {
   StepsValues,
   StepsDirection,
@@ -17,6 +17,7 @@ import {
   getAnimationConfig,
   runPromises,
 } from "../utils";
+import useStepsStateReducer from "./useStepsStateReducer";
 
 type UseStepsStateProps<TStepsValues extends StepsValues> = {
   stepElements: StepElement<TStepsValues>[];
@@ -26,36 +27,6 @@ type UseStepsStateProps<TStepsValues extends StepsValues> = {
   form: StepsFormHandle<TStepsValues>;
   onForward?: StepsNavigationHandler<TStepsValues>;
   onBackward?: StepsNavigationHandler<TStepsValues>;
-};
-
-const initialState = {
-  direction: "forward",
-  status: "idle",
-  history: [],
-  activeSteps: [],
-};
-
-const stepsReducer = (state: any, action: any) => {
-  switch (action.type) {
-    case "SET_STATUS":
-      return { ...state, status: action.status };
-    case "NAVIGATE":
-      return {
-        ...state,
-        history: action.history,
-        status: action.status,
-        direction: action.direction,
-        activeSteps: action.activeSteps ?? state.activeSteps,
-      };
-    case "RESET":
-      return {
-        ...initialState,
-        direction: "backward",
-        history: [action.initialStepId],
-      };
-    default:
-      throw new Error(`Unhandled action type: ${action.type}`);
-  }
 };
 
 /**
@@ -70,10 +41,9 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
   onForward,
   onBackward,
 }: UseStepsStateProps<TStepsValues>) => {
-  const [inner, dispatch] = useReducer(stepsReducer, {
-    ...initialState,
-    history: [defaultStep || stepElements[0].props.id],
+  const { state, updateState, resetState } = useStepsStateReducer({
     activeSteps: filterActiveSteps(stepElements, form.getValues()),
+    history: [defaultStep || stepElements[0].props.id],
   });
 
   const { isAnimated, transition } = useMemo(
@@ -85,29 +55,29 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
    * Computes the current step's index and ID based on the history.
    */
   const currentStep = useMemo(() => {
-    const id = inner.history.at(-1) as StepId;
+    const id = state.history.at(-1) as StepId;
     const index = stepElements.findIndex((step) => step.props.id === id);
     return { index, id };
-  }, [stepElements, inner.history]);
+  }, [stepElements, state.history]);
 
   /**
    * Representation of the state of Steps.
    */
-  const state: StepsState<TStepsValues> = useMemo(
+  const stepsState: StepsState<TStepsValues> = useMemo(
     () => ({
       currentStep,
-      activeSteps: inner.activeSteps,
+      activeSteps: state.activeSteps,
       allSteps: stepElements,
-      isFirstStep: currentStep.id === inner.history.at(0),
-      isLastStep: currentStep.id === inner.activeSteps.at(-1)?.props.id,
+      isFirstStep: currentStep.id === state.history[0],
+      isLastStep: currentStep.id === state.activeSteps.at(-1)?.props.id,
       isAnimated,
-      isDisabled: inner.status !== "idle" || disabled,
-      isTransitioning: inner.status === "transitioning",
-      isValidating: inner.status === "validating",
-      direction: inner.direction,
-      history: inner.history,
+      isDisabled: state.status !== "idle" || disabled,
+      isTransitioning: state.status === "transitioning",
+      isValidating: state.status === "validating",
+      direction: state.direction,
+      history: state.history,
     }),
-    [inner, currentStep, stepElements, isAnimated, disabled],
+    [state, currentStep, stepElements, isAnimated, disabled],
   );
 
   /**
@@ -159,22 +129,14 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
         newHistory = [...state.history, stepId];
       }
 
-      dispatch({
-        type: "NAVIGATE",
+      updateState({
+        direction: newDirection,
         history: newHistory,
         status: isAnimated ? "transitioning" : "idle",
-        direction: newDirection,
         activeSteps: newActiveSteps,
       });
-
-      if (isAnimated) {
-        setTimeout(
-          () => dispatch({ type: "SET_STATUS", status: "idle" }),
-          transition.duration * 1000,
-        );
-      }
     },
-    [state, isAnimated, transition],
+    [state, isAnimated, updateState],
   );
 
   /**
@@ -187,17 +149,17 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
    */
   const next = useCallback(
     async (stepId?: StepId) => {
-      if (state.isDisabled) return;
+      if (stepsState.isDisabled) return;
 
-      dispatch({ type: "SET_STATUS", status: "validating" });
+      updateState({ status: "validating" });
 
       const canProceed = await runChecks([
         async () => form.validate(),
-        async () => onForward?.({ stepId, state, form }),
+        async () => onForward?.({ stepId, state: stepsState, form }),
       ]);
 
       if (!canProceed) {
-        dispatch({ type: "SET_STATUS", status: "idle" });
+        updateState({ status: "idle" });
         return;
       }
 
@@ -210,9 +172,11 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
 
       if (nextStepId) {
         goto(nextStepId, "forward", activeSteps);
+      } else {
+        updateState({ status: "idle" });
       }
     },
-    [state, form, runChecks, onForward, goto],
+    [stepsState, form, updateState, runChecks, onForward, goto],
   );
 
   /**
@@ -226,28 +190,30 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
    */
   const prev = useCallback(
     async (stepId?: StepId) => {
-      if (state.isDisabled || state.history.length <= 1) return;
+      if (stepsState.isDisabled || stepsState.history.length <= 1) return;
 
       if (onBackward) {
-        dispatch({ type: "SET_STATUS", status: "validating" });
+        updateState({ status: "validating" });
       }
 
       const canProceed = await runChecks([
-        async () => onBackward?.({ stepId, state, form }),
+        async () => onBackward?.({ stepId, state: stepsState, form }),
       ]);
 
       if (!canProceed) {
-        dispatch({ type: "SET_STATUS", status: "idle" });
+        updateState({ status: "idle" });
         return;
       }
 
-      const targetStepId = findPrevStep(state.history, stepId);
+      const targetStepId = findPrevStep(stepsState.history, stepId);
 
       if (targetStepId) {
-        goto(targetStepId, "backward");
+        goto(targetStepId, "backward", stepsState.activeSteps);
+      } else {
+        updateState({ status: "idle" });
       }
     },
-    [state, form, goto],
+    [stepsState, form, updateState, goto],
   );
 
   /**
@@ -256,16 +222,35 @@ export const useStepsState = <TStepsValues extends StepsValues = StepsValues>({
    * Resets the state of steps and its form.
    */
   const reset = useCallback(async () => {
-    const initialStepId = defaultStep || stepElements[0].props.id;
-    dispatch({ type: "RESET", initialStepId });
+    resetState(defaultStep || stepElements[0].props.id);
     // Default values must be provided (see https://github.com/orgs/react-hook-form/discussions/7589)
     form.reset(form.defaultValues);
-  }, [form]);
+  }, [form, resetState]);
+
+  /**
+   * Effect to handle the transition state.
+   */
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    if (isAnimated && state.status === "transitioning") {
+      timeoutId = setTimeout(
+        () => updateState({ status: "idle" }),
+        transition.duration * 1000,
+      );
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isAnimated, state.status, transition.duration]);
 
   return {
     next,
     prev,
     reset,
-    state,
+    state: stepsState,
   };
 };
