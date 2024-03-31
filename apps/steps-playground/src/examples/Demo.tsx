@@ -1,5 +1,5 @@
 import React from "react";
-// import { StepsDebugger } from "@koolm/steps";
+import { StepsDebugger } from "@koolm/steps";
 
 export type DemoComponentProps = {
   debugger: React.ReactElement;
@@ -12,7 +12,7 @@ type DemoProps = {
 
 function Demo({ title, as: Component }: DemoProps) {
   const [showDebugger, setShowDebugger] = React.useState(false);
-  //   const debuggerElement = showDebugger ? <StepsDebugger title={title} /> : null;
+  const debuggerElement = showDebugger ? <StepsDebugger title={title} /> : null;
 
   return (
     <section>
@@ -23,7 +23,7 @@ function Demo({ title, as: Component }: DemoProps) {
           onClick={() => setShowDebugger((visible) => !visible)}
         />
       </header>
-      <Component debugger={<></>} />
+      <Component debugger={debuggerElement as React.ReactElement} />
     </section>
   );
 }
