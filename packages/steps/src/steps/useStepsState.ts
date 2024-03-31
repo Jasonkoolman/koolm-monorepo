@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   StepsValues,
   StepsDirection,
