@@ -1,6 +1,5 @@
 import React, { useCallback } from "react";
 import { useForm } from "react-hook-form";
-import { CheckIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { StepField } from "@/types";
@@ -41,7 +40,7 @@ export const FieldEditor = ({ field, onSave }: FieldEditorProps) => {
       onSave(data);
       reset(data);
     },
-    [onSave, reset]
+    [onSave, reset],
   );
 
   const onReset = useCallback(() => {

@@ -41,7 +41,7 @@ export type FlowState = {
 
 export const useFlowStore = create<FlowState>((set, get) => ({
   instance: null,
-  nodes: initialNodes,
+  nodes: initialNodes as any, // TODO: type any
   edges: initialEdges,
   edgeOptions: {
     type: "default",

@@ -1,10 +1,10 @@
 import type { ComponentType } from "react";
-import type { FieldName, FieldValues, RegisterOptions } from "react-hook-form";
+import type { FieldName, FieldValues } from "react-hook-form";
 import type { Node, NodeProps } from "@xyflow/react";
 
 export type CustomNodeComponent<
   TData extends Record<string, any> = Record<string, any>,
-  TNodeType extends string = string
+  TNodeType extends string = string,
 > = ComponentType<
   NodeProps & {
     data: TData;
@@ -31,7 +31,7 @@ export type StepFieldType =
 
 export type StepField<
   TFieldValues extends FieldValues = FieldValues,
-  TFieldName extends FieldName<TFieldValues> = FieldName<TFieldValues>
+  TFieldName extends FieldName<TFieldValues> = FieldName<TFieldValues>,
 > = {
   type: StepFieldType;
   name: TFieldName;

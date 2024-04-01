@@ -56,10 +56,10 @@ export function Sidebar() {
   const handleSubmit = useCallback(
     (data: StepFormValues) => {
       if (selectedNode) {
-        updateStep(selectedNode.id, data);
+        updateStep(selectedNode.id, data as any); // TODO: type any
       }
     },
-    [selectedNode]
+    [selectedNode],
   );
 
   return (
