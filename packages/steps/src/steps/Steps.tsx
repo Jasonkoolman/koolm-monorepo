@@ -20,7 +20,7 @@ import {
  *
  * @param props.children - The step components that form the multi-step process.
  * @param props.defaultValues - Default form values.
- * @param props.defaultHistory - The history of the steps flow.
+ * @param props.defaultHistory - Default Steps history.
  * @param props.animate - Configures the animation for step transitions.
  * @param props.disabled - Disables all interactions when true.
  * @param props.className - Additional CSS classes for the form.

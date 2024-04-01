@@ -146,6 +146,29 @@ describe("Steps component", () => {
     expect(onBackward).toHaveBeenCalled();
   });
 
+  it("halts navigation when onForward or onBackward return false", async () => {
+    const onForward = vi.fn().mockResolvedValue(false);
+    const onBackward = vi.fn().mockResolvedValue(false);
+    const { getButton, getStep } = renderSteps({ onForward, onBackward });
+
+    // Attempt to navigate forward and verify navigation is halted
+    await user.click(getButton("Next"));
+    expect(onForward).toHaveBeenCalled();
+    // Verify the step hasn't changed (still on "One")
+    expect(getStep("One")).toBeInTheDocument();
+
+    // Navigate to the next step manually to test onBackward
+    onForward.mockResolvedValue(true); // Temporarily allow navigation
+    await user.click(getButton("Next"));
+    expect(getStep("Two")).toBeInTheDocument();
+
+    // Attempt to navigate back with onBackward returning false
+    await user.click(getButton("Prev"));
+    expect(onBackward).toHaveBeenCalled();
+    // Verify the step hasn't changed (still on "Two" despite attempting to go back)
+    expect(getStep("Two")).toBeInTheDocument();
+  });
+
   it("invokes onStepEnter and onStepExit during transitions", async () => {
     const onStepEnter = vi.fn();
     const onStepExit = vi.fn();
