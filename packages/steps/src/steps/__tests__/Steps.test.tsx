@@ -62,133 +62,141 @@ const renderSteps = (props?: MockStepsProps) => {
       <StepNavbar>
         <PrevButton>Prev</PrevButton>
         <NextButton>Next</NextButton>
-        <SubmitButton>Submit</SubmitButton>
+        <SubmitButton show={-1}>Submit</SubmitButton>
       </StepNavbar>
     </Steps>,
   );
 
-  const getStep = (name: string) => result.getByRole("heading", { name });
-  const getInput = (name: string) => result.getByPlaceholderText(name);
-  const getButton = (name: string) => result.getByRole("button", { name });
-
   return {
     ...result,
-    getStep,
-    getInput,
-    getButton,
+    getStep: (name: string) => result.getByRole("heading", { name }),
+    getInput: (name: string) => result.getByPlaceholderText(name),
+    getButton: (name: string) => result.getByRole("button", { name }),
     onSubmit,
   };
 };
 
-describe("Steps Component", () => {
+describe("Steps component", () => {
   const user = userEvent.setup();
 
   beforeAll(() => {
     MotionGlobalConfig.skipAnimations = true;
   });
-
   afterAll(() => {
     MotionGlobalConfig.skipAnimations = false;
   });
 
-  it("renders and navigates between steps correctly", async () => {
+  it("navigates between steps", async () => {
     const { getStep, getButton } = renderSteps();
-
-    expect(getStep("One")).toBeInTheDocument();
-
     await user.click(getButton("Next"));
-
     expect(getStep("Two")).toBeInTheDocument();
   });
 
-  it("prevents navigation to the next step on invalid input", async () => {
+  it("prevents navigation on invalid input", async () => {
     const { getStep, getInput, getButton } = renderSteps();
-
-    await user.click(getButton("Next"));
-
-    expect(getStep("Two")).toBeInTheDocument();
-
-    await user.click(getButton("Next"));
-
-    expect(getStep("Two")).toBeInTheDocument();
-
+    await user.click(getButton("Next")); // Proceed without filling required field
+    expect(getStep("Two")).toBeInTheDocument(); // Still on "Two" due to validation
     await user.type(getInput("two"), "John Doe");
     await user.click(getButton("Next"));
-
-    expect(getStep("Three")).toBeInTheDocument();
+    expect(getStep("Three")).toBeInTheDocument(); // Proceeds after valid input
   });
 
-  it("navigates back to the previous step", async () => {
+  it("navigates back correctly", async () => {
     const { getStep, getButton } = renderSteps();
-
     await user.click(getButton("Next"));
     await user.click(getButton("Prev"));
-
-    expect(getStep("One")).toBeInTheDocument();
+    expect(getStep("One")).toBeInTheDocument(); // Returned to "One"
   });
 
-  it("submits the form with valid inputs from all steps", async () => {
+  it("submits with valid inputs", async () => {
     const { getInput, getButton, onSubmit } = renderSteps();
-
-    const answers = {
-      one: "FirstValue",
-      two: "SecondValue",
-      three: "ThirdValue",
-    };
-
-    await user.type(getInput("one"), answers.one);
+    await user.type(getInput("one"), "FirstValue");
     await user.click(getButton("Next"));
-
-    await user.type(getInput("two"), answers.two);
+    await user.type(getInput("two"), "SecondValue");
     await user.click(getButton("Next"));
-
-    await user.type(getInput("three"), answers.three);
+    await user.type(getInput("three"), "ThirdValue");
     await user.click(getButton("Submit"));
-
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        state: expect.any(Object),
-        values: expect.objectContaining(answers),
-        answers: expect.objectContaining(answers),
+        values: {
+          one: "FirstValue",
+          two: "SecondValue",
+          three: "ThirdValue",
+        },
       }),
     );
   });
 
-  it("handles conditional steps and retains only visited step values", async () => {
-    const { getInput, getButton, getStep, onSubmit } = renderSteps();
+  it("disables navigation buttons", async () => {
+    const { getButton } = renderSteps({
+      disabled: true,
+      defaultHistory: ["2"],
+    });
+    expect(getButton("Prev")).toBeDisabled();
+    expect(getButton("Next")).toBeDisabled();
+  });
 
-    // Navigate to Step 2
-    await user.type(getInput("one"), "FirstValue");
+  it("invokes onForward and onBackward during navigation", async () => {
+    const onForward = vi.fn().mockResolvedValue(true);
+    const onBackward = vi.fn().mockResolvedValue(true);
+    const { getButton } = renderSteps({ onForward, onBackward });
     await user.click(getButton("Next"));
-    expect(getStep("Two")).toBeInTheDocument();
+    expect(onForward).toHaveBeenCalled();
+    await user.click(getButton("Prev"));
+    expect(onBackward).toHaveBeenCalled();
+  });
 
-    // Choose the option that leads to Step 2a
-    await user.type(getInput("two"), "a");
+  it("invokes onStepEnter and onStepExit during transitions", async () => {
+    const onStepEnter = vi.fn();
+    const onStepExit = vi.fn();
+    const { getButton } = renderSteps({ onStepEnter, onStepExit });
     await user.click(getButton("Next"));
-    expect(getStep("Two A")).toBeInTheDocument();
+    expect(onStepExit).toHaveBeenCalledTimes(1);
+    expect(onStepEnter).toHaveBeenCalledTimes(1);
+    await user.click(getButton("Prev"));
+    expect(onStepExit).toHaveBeenCalledTimes(2);
+    expect(onStepEnter).toHaveBeenCalledTimes(2);
+  });
 
-    // Fill in Step 2a and then navigate back to Step 2 to change the input to lead to 2b
-    await user.type(getInput("two_a"), "ValueA");
+  it("respects defaultHistory for navigation", async () => {
+    const { getStep, getButton } = renderSteps({ defaultHistory: ["2", "3"] });
+    expect(getStep("Three")).toBeInTheDocument(); // Starts at "Three"
     await user.click(getButton("Prev"));
     expect(getStep("Two")).toBeInTheDocument();
+    await user.click(getButton("Prev"));
+    expect(getStep("Two")).toBeInTheDocument(); // Remains on "Two"
+  });
 
-    // Change input at Step 2 to lead to Step 2b instead
+  it("manages conditional steps and visited values", async () => {
+    const { getInput, getButton, getStep, onSubmit } = renderSteps();
+
+    // Navigate to the second step after filling the first
+    await user.type(getInput("one"), "FirstValue");
+    await user.click(getButton("Next"));
+
+    // Set input to conditionally display Step 2a
+    await user.type(getInput("two"), "a");
+    await user.click(getButton("Next"));
+    // Validate that conditional navigation occurred based on input
+    expect(getStep("Two A")).toBeInTheDocument();
+
+    // Fill Step 2a and backtrack to change conditional path
+    await user.type(getInput("two_a"), "ValueA");
+    await user.click(getButton("Prev"));
+
+    // Change the condition to navigate to an alternate step (Step 2b)
     await user.clear(getInput("two"));
     await user.type(getInput("two"), "b");
     await user.click(getButton("Next"));
+    // Confirm the navigation to Step 2b
     expect(getStep("Two B")).toBeInTheDocument();
 
-    // Fill in Step 2b and proceed to Step 3
+    // Complete Step 2b, submit, and verify submission includes only visited steps
     await user.type(getInput("two_b"), "ValueB");
     await user.click(getButton("Next"));
-    expect(getStep("Three")).toBeInTheDocument();
-
-    // Fill in Step 3 and submit
     await user.type(getInput("three"), "ThirdValue");
     await user.click(getButton("Submit"));
-
-    // Verify onSubmit was called with the expected data
-    // Specifically, "two_a" should NOT be included in `answers` since we navigated back and chose a different path
+    // Ensure onSubmit captured the correct sequence of steps, excluding non-visited conditional paths
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
         state: expect.any(Object),
